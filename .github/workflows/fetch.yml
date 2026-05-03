@@ -1,0 +1,69 @@
+name: 擷取期交所籌碼資料
+
+on:
+  schedule:
+    # 夜盤：台灣時間 07:20 = UTC 23:20 (前一天)
+    - cron: '20 23 * * 0-4'
+    # 全日：台灣時間 14:20 = UTC 06:20
+    - cron: '20 6 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      session:
+        description: '手動指定場次'
+        required: true
+        default: 'night'
+        type: choice
+        options:
+          - night
+          - day
+          - both
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd scripts
+          npm install
+
+      - name: Determine session type
+        id: session
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "type=${{ github.event.inputs.session }}" >> $GITHUB_OUTPUT
+          else
+            HOUR=$(TZ='Asia/Taipei' date +%H)
+            if [ "$HOUR" = "07" ]; then
+              echo "type=night" >> $GITHUB_OUTPUT
+            else
+              echo "type=day" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Fetch night session data
+        if: steps.session.outputs.type == 'night' || steps.session.outputs.type == 'both'
+        run: node scripts/fetch.js night
+
+      - name: Fetch day session data
+        if: steps.session.outputs.type == 'day' || steps.session.outputs.type == 'both'
+        run: node scripts/fetch.js day
+
+      - name: Commit and push data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          git diff --staged --quiet || git commit -m "📊 更新籌碼資料 $(TZ='Asia/Taipei' date '+%Y-%m-%d %H:%M')"
+          git push
