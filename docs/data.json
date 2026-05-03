@@ -1,29 +1,4 @@
 {
-  "lastUpdated": "2026-05-03 18:09:01",
-  "history": [
-    {
-      "date": "2026-05-03",
-      "night": {
-        "raw": {
-          "臺股期貨": null,
-          "小型臺指期貨": null,
-          "微型臺指期貨": null
-        },
-        "total": null
-      },
-      "day": null,
-      "full": {
-        "raw": {
-          "臺股期貨": null,
-          "小型臺指期貨": null,
-          "微型臺指期貨": null
-        },
-        "total": null
-      },
-      "updatedAt": {
-        "night": "2026-05-03 18:08:54",
-        "full": "2026-05-03 18:09:01"
-      }
-    }
-  ]
+  "lastUpdated": null,
+  "history": []
 }
