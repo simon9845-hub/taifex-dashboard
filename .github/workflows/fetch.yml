@@ -2,9 +2,7 @@ name: 擷取期交所籌碼資料
 
 on:
   schedule:
-    # 夜盤：台灣時間 07:20 = UTC 23:20 (前一天)
     - cron: '20 23 * * 0-4'
-    # 全日：台灣時間 14:20 = UTC 06:20
     - cron: '20 6 * * 1-5'
   workflow_dispatch:
     inputs:
@@ -17,6 +15,9 @@ on:
           - night
           - day
           - both
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   fetch:
