@@ -1,0 +1,9 @@
+{
+  "name": "taifex-fetcher",
+  "version": "1.0.0",
+  "description": "擷取台灣期交所法人籌碼資料",
+  "main": "fetch.js",
+  "dependencies": {
+    "node-html-parser": "^6.1.12"
+  }
+}
