@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>臺指期貨法人籌碼儀表板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --bg2: #111318;
+    --bg3: #1a1d24;
+    --border: #252830;
+    --border2: #2e3240;
+    --text: #e8eaf0;
+    --text2: #8b90a0;
+    --text3: #555a6a;
+    --red: #f05060;
+    --red-bg: rgba(240,80,96,0.08);
+    --green: #30b060;
+    --green-bg: rgba(48,176,96,0.08);
+    --blue: #4090e0;
+    --blue-bg: rgba(64,144,224,0.08);
+    --yellow: #e0a030;
+    --yellow-bg: rgba(224,160,48,0.08);
+    --accent: #5060f0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+
+  /* ── Layout ── */
+  .wrap { max-width: 900px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 28px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .logo-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent);
+  }
+  h1 { font-size: 18px; font-weight: 500; letter-spacing: .02em; }
+  .subtitle { font-size: 12px; color: var(--text3); line-height: 1.6; }
+  .update-info { text-align: right; }
+  .update-time { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3); }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--green);
+    background: var(--green-bg); border: 1px solid rgba(48,176,96,0.2);
+    padding: 3px 8px; border-radius: 99px; margin-bottom: 6px;
+  }
+  .live-badge .pulse {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── Date selector ── */
+  .date-bar {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .date-btn {
+    padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border2);
+    background: var(--bg2); color: var(--text2); font-size: 12px;
+    font-family: 'JetBrains Mono', monospace; cursor: pointer;
+    transition: all .15s;
+  }
+  .date-btn:hover { border-color: var(--accent); color: var(--text); }
+  .date-btn.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #fff; font-weight: 600;
+  }
+
+  /* ── Summary cards ── */
+  .cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  @media(max-width:600px){ .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    position: relative; overflow: hidden; transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--border2); }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    border-radius:12px 12px 0 0;
+  }
+  .card.night::before { background: linear-gradient(90deg, var(--blue), transparent); }
+  .card.day::before   { background: linear-gradient(90deg, var(--yellow), transparent); }
+  .card.full::before  { background: linear-gradient(90deg, var(--accent), transparent); }
+  .card-tag {
+    font-size: 10px; font-weight: 500; letter-spacing: .08em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .card.night .card-tag { color: var(--blue); }
+  .card.day   .card-tag { color: var(--yellow); }
+  .card.full  .card-tag { color: var(--accent); }
+  .card-time { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text3); margin-bottom:6px; }
+  .card-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px; font-weight: 600; line-height: 1;
+    transition: color .3s;
+  }
+  .card-value.pos { color: var(--red); }
+  .card-value.neg { color: var(--green); }
+  .card-value.zero { color: var(--text2); }
+  .card-value.empty { color: var(--text3); font-size: 22px; }
+  .card-note { font-size: 11px; color: var(--text3); margin-top: 6px; }
+
+  /* ── Detail table ── */
+  .section-label {
+    font-size: 11px; font-weight: 500; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--text3);
+    margin-bottom: 10px;
+  }
+  .table-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 10px 14px;
+    font-size: 10px; font-weight: 500; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  th:not(:first-child) { text-align: right; }
+  td {
+    padding: 11px 14px; border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:not(:first-child) { text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  td.pos { color: var(--red); }
+  td.neg { color: var(--green); }
+  td.dim { color: var(--text3); }
+  .product-name { font-weight: 500; color: var(--text); }
+  .divisor-badge {
+    display: inline-block; font-size: 9px; padding: 1px 5px;
+    border-radius: 3px; background: var(--bg3); color: var(--text3);
+    margin-left: 5px; font-family: 'JetBrains Mono', monospace;
+    vertical-align: middle;
+  }
+
+  /* ── History ── */
+  .history-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+  }
+  .history-head {
+    display: grid; grid-template-columns: 120px 1fr 1fr 1fr;
+    padding: 9px 14px; background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-weight: 500; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text3);
+  }
+  .history-head span:not(:first-child) { text-align: right; }
+  .history-row {
+    display: grid; grid-template-columns: 120px 1fr 1fr 1fr;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    font-size: 12px; transition: background .1s; cursor: pointer;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-row:hover { background: var(--bg3); }
+  .history-row.selected { background: rgba(80,96,240,0.06); border-left: 2px solid var(--accent); }
+  .history-date { font-family: 'JetBrains Mono', monospace; color: var(--text2); font-size: 11px; }
+  .history-val { text-align: right; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Formula ── */
+  .formula-box {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px;
+    font-size: 12px; color: var(--text2); line-height: 2;
+    margin-bottom: 20px;
+  }
+  .formula-box code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--text);
+    background: var(--bg); padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* ── Empty / loading ── */
+  .empty { padding: 40px; text-align: center; color: var(--text3); font-size: 13px; }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border2);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="logo-row">
+        <div class="logo-dot"></div>
+        <h1>臺指期貨法人籌碼</h1>
+      </div>
+      <div class="subtitle">
+        臺股期貨 + 小型臺指÷4 + 微型臺指÷20<br>
+        夜盤 07:20 ／ 全日 14:20（交易日自動更新）
+      </div>
+    </div>
+    <div class="update-info">
+      <div id="live-badge" class="live-badge" style="display:none">
+        <div class="pulse"></div>已同步
+      </div>
+      <div class="update-time" id="update-time">載入中...</div>
+    </div>
+  </div>
+
+  <!-- Date selector -->
+  <div class="date-bar" id="date-bar"></div>
+
+  <!-- Summary cards -->
+  <div class="cards">
+    <div class="card night">
+      <div class="card-tag">🌙 夜盤</div>
+      <div class="card-time" id="t-night">—</div>
+      <div class="card-value empty" id="v-night">—</div>
+      <div class="card-note">07:20 盤後資料</div>
+    </div>
+    <div class="card day">
+      <div class="card-tag">☀️ 日盤</div>
+      <div class="card-time" id="t-day">—</div>
+      <div class="card-value empty" id="v-day">—</div>
+      <div class="card-note">全日 − 夜盤</div>
+    </div>
+    <div class="card full">
+      <div class="card-tag">📊 全日</div>
+      <div class="card-time" id="t-full">—</div>
+      <div class="card-value empty" id="v-full">—</div>
+      <div class="card-note">14:20 盤後資料</div>
+    </div>
+  </div>
+
+  <!-- Formula -->
+  <div class="formula-box">
+    公式：<code>臺股期貨淨額</code> + <code>小型臺指淨額 ÷ 4</code> + <code>微型臺指淨額 ÷ 20</code>
+    &nbsp;｜&nbsp; 正值 <span style="color:var(--red)">▲ 偏多</span>
+    &nbsp; 負值 <span style="color:var(--green)">▼ 偏空</span>
+  </div>
+
+  <!-- Detail table -->
+  <div class="section-label">各契約明細</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>契約</th>
+          <th>夜盤淨額口數</th>
+          <th>夜盤折算</th>
+          <th>全日淨額口數</th>
+          <th>全日折算</th>
+          <th>日盤折算</th>
+        </tr>
+      </thead>
+      <tbody id="detail-body">
+        <tr><td colspan="6" class="empty"><div class="spinner"></div>載入資料中...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- History -->
+  <div class="section-label">歷史記錄（近30日）</div>
+  <div class="history-wrap">
+    <div class="history-head">
+      <span>日期</span><span style="text-align:right">夜盤</span><span style="text-align:right">日盤</span><span style="text-align:right">全日</span>
+    </div>
+    <div id="history-list"><div class="empty"><div class="spinner"></div></div></div>
+  </div>
+
+</div>
+
+<script>
+const PRODUCTS = ['臺股期貨', '小型臺指期貨', '微型臺指期貨'];
+const DIVISORS = { '臺股期貨': 1, '小型臺指期貨': 4, '微型臺指期貨': 20 };
+
+let allData = null;
+let selectedDate = null;
+
+function fmt(v, decimals = 2) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  const n = parseFloat(v);
+  return (n > 0 ? '+' : '') + n.toLocaleString('zh-TW', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+function colorClass(v) {
+  if (v === null || v === undefined || isNaN(v)) return '';
+  const n = parseFloat(v);
+  return n > 0 ? 'pos' : n < 0 ? 'neg' : 'zero';
+}
+function fmtRaw(v) {
+  if (v === null || v === undefined || isNaN(v)) return '—';
+  return parseInt(v).toLocaleString('zh-TW');
+}
+
+function renderCards(record) {
+  const N = record?.night;
+  const F = record?.full;
+  const D = record?.day;
+
+  setCard('night', N?.total, record?.updatedAt?.night);
+  setCard('full',  F?.total, record?.updatedAt?.full);
+  setCard('day',   D?.total, record?.updatedAt?.day);
+}
+
+function setCard(key, val, time) {
+  const vEl = document.getElementById(`v-${key}`);
+  const tEl = document.getElementById(`t-${key}`);
+  if (val !== null && val !== undefined && !isNaN(val)) {
+    vEl.textContent = fmt(val, 2);
+    vEl.className = 'card-value ' + colorClass(val);
+  } else {
+    vEl.textContent = '—';
+    vEl.className = 'card-value empty';
+  }
+  tEl.textContent = time ? time.split(' ')[1] || '—' : '尚未擷取';
+}
+
+function renderDetail(record) {
+  const tbody = document.getElementById('detail-body');
+  if (!record) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">尚無資料</td></tr>';
+    return;
+  }
+  const N = record.night?.raw;
+  const F = record.full?.raw;
+
+  tbody.innerHTML = PRODUCTS.map(p => {
+    const div = DIVISORS[p];
+    const nRaw = N?.[p] ?? null;
+    const fRaw = F?.[p] ?? null;
+    const nCvt = nRaw !== null ? nRaw / div : null;
+    const fCvt = fRaw !== null ? fRaw / div : null;
+    const dCvt = (nCvt !== null && fCvt !== null) ? fCvt - nCvt : null;
+    const badge = div > 1 ? `<span class="divisor-badge">÷${div}</span>` : '<span class="divisor-badge">×1</span>';
+    return `<tr>
+      <td class="product-name">${p}${badge}</td>
+      <td class="${colorClass(nRaw)} dim">${nRaw !== null ? fmtRaw(nRaw) : '—'}</td>
+      <td class="${colorClass(nCvt)}">${nCvt !== null ? fmt(nCvt) : '—'}</td>
+      <td class="${colorClass(fRaw)} dim">${fRaw !== null ? fmtRaw(fRaw) : '—'}</td>
+      <td class="${colorClass(fCvt)}">${fCvt !== null ? fmt(fCvt) : '—'}</td>
+      <td class="${colorClass(dCvt)}">${dCvt !== null ? fmt(dCvt) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDateBar(history) {
+  const bar = document.getElementById('date-bar');
+  bar.innerHTML = history.slice(0, 10).map(r =>
+    `<button class="date-btn ${r.date === selectedDate ? 'active' : ''}"
+      onclick="selectDate('${r.date}')">${r.date}</button>`
+  ).join('');
+}
+
+function renderHistory(history) {
+  const el = document.getElementById('history-list');
+  if (!history.length) {
+    el.innerHTML = '<div class="empty">尚無歷史資料</div>';
+    return;
+  }
+  el.innerHTML = history.map(r =>
+    `<div class="history-row ${r.date === selectedDate ? 'selected' : ''}" onclick="selectDate('${r.date}')">
+      <span class="history-date">${r.date}</span>
+      <span class="history-val ${colorClass(r.night?.total)}">${r.night?.total !== undefined ? fmt(r.night.total) : '—'}</span>
+      <span class="history-val ${colorClass(r.day?.total)}">${r.day?.total !== undefined ? fmt(r.day.total) : '—'}</span>
+      <span class="history-val ${colorClass(r.full?.total)}">${r.full?.total !== undefined ? fmt(r.full.total) : '—'}</span>
+    </div>`
+  ).join('');
+}
+
+function selectDate(date) {
+  selectedDate = date;
+  const record = allData.history.find(r => r.date === date);
+  renderCards(record);
+  renderDetail(record);
+  renderDateBar(allData.history);
+  renderHistory(allData.history);
+}
+
+async function loadData() {
+  try {
+    const res = await fetch(`data.json?_=${Date.now()}`);
+    const data = await res.json();
+    allData = data;
+
+    if (data.lastUpdated) {
+      document.getElementById('update-time').textContent = '更新：' + data.lastUpdated;
+      document.getElementById('live-badge').style.display = 'inline-flex';
+    } else {
+      document.getElementById('update-time').textContent = '尚無資料（等待首次 Actions 執行）';
+    }
+
+    if (data.history?.length) {
+      if (!selectedDate) selectedDate = data.history[0].date;
+      renderDateBar(data.history);
+      const record = data.history.find(r => r.date === selectedDate) || data.history[0];
+      selectedDate = record.date;
+      renderCards(record);
+      renderDetail(record);
+      renderHistory(data.history);
+    } else {
+      document.getElementById('detail-body').innerHTML =
+        '<tr><td colspan="6" class="empty">尚無資料，等待 GitHub Actions 首次執行</td></tr>';
+      document.getElementById('history-list').innerHTML =
+        '<div class="empty">尚無歷史記錄</div>';
+    }
+  } catch (e) {
+    document.getElementById('update-time').textContent = '資料載入失敗';
+    console.error(e);
+  }
+}
+
+loadData();
+// 每 5 分鐘自動重新載入
+setInterval(loadData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
